@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 
-import { TransactionsService } from './transactions.service';
-import { Transaction } from './transaction.type';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CategoryDto,
   CreateTransactionRequestDto,
   TransactionDto,
 } from './dtos';
+import { TransactionType } from './transaction.type';
+import { TransactionsService } from './transactions.service';
 
 @ApiTags('transactions')
 @Controller('transactions')
@@ -19,11 +19,11 @@ export class TransactionsController {
     status: 201,
     type: TransactionDto,
   })
-  createTransaction(
+  async createTransaction(
     @Body() request: CreateTransactionRequestDto,
-  ): TransactionDto {
+  ): Promise<TransactionDto> {
     return new TransactionDto(
-      this.service.createTransaction(request.transaction),
+      await this.service.createTransaction(request.transaction),
     );
   }
 
@@ -33,8 +33,8 @@ export class TransactionsController {
     type: TransactionDto,
     isArray: true,
   })
-  getAllTransactions(): Transaction[] {
-    return this.service.getAllTransactions();
+  async getAllTransactions(): Promise<TransactionType[]> {
+    return await this.service.getAllTransactions();
   }
 
   @Get('by-category')
@@ -43,7 +43,9 @@ export class TransactionsController {
     type: CategoryDto,
     isArray: true,
   })
-  getSumByCategory() {
-    return this.service.getSumByCategory().map((c) => new CategoryDto(c));
+  async getSumByCategory() {
+    return (await this.service.getSumByCategory()).map(
+      (c) => new CategoryDto(c),
+    );
   }
 }

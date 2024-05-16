@@ -1,32 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { Transaction } from './transaction.type';
 import { parse } from './parse';
+import { Transaction } from 'src/entities/transaction.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TransactionDto } from './dtos';
 
 @Injectable()
 export class TransactionsService {
-  private transactions: Transaction[] = [];
+  constructor(
+    @InjectRepository(Transaction)
+    private repository: Repository<Transaction>,
+  ) {}
 
-  createTransaction(input: string): Transaction {
-    const transaction = parse(input);
-    this.transactions.push(transaction);
-    return transaction;
+  async createTransaction(input: string): Promise<Transaction> {
+    return await this.repository.save(parse(input));
   }
 
-  getAllTransactions(): Transaction[] {
-    return this.transactions;
+  async createTransaction2(input: TransactionDto): Promise<Transaction> {
+    return await this.repository.save(input);
   }
 
-  getSumByCategory() {
-    const categoryMap: { [key: string]: number } = {};
+  async getAllTransactions(): Promise<Transaction[]> {
+    return await this.repository.find();
+  }
 
-    this.transactions.forEach((transaction) => {
-      const { category, amount } = transaction;
-      categoryMap[category] = (categoryMap[category] || 0) + amount;
-    });
-
-    return Object.keys(categoryMap).map((category) => ({
-      category,
-      amount: categoryMap[category],
-    }));
+  async getSumByCategory() {
+    return await this.repository
+      .createQueryBuilder('transaction')
+      .select('transaction.category', 'category')
+      .addSelect('SUM(transaction.amount)', 'amount')
+      .groupBy('transaction.category')
+      .getRawMany();
   }
 }

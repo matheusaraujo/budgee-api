@@ -1,6 +1,6 @@
-import { Transaction } from './transaction.type';
+import { TransactionType } from './transaction.type';
 
-export function parse(input: string): Transaction {
+export function parse(input: string): TransactionType {
   const words = input.split(' ');
 
   return {

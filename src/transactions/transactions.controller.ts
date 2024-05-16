@@ -27,6 +27,17 @@ export class TransactionsController {
     );
   }
 
+  @Post('two')
+  @ApiResponse({
+    status: 201,
+    type: TransactionDto,
+  })
+  async createTransaction2(
+    @Body() request: TransactionDto,
+  ): Promise<TransactionDto> {
+    return new TransactionDto(await this.service.createTransaction2(request));
+  }
+
   @Get()
   @ApiResponse({
     status: 200,

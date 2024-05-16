@@ -3,6 +3,7 @@ import { parse } from './parse';
 import { Transaction } from 'src/entities/transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { TransactionDto } from './dtos';
 
 @Injectable()
 export class TransactionsService {
@@ -13,6 +14,10 @@ export class TransactionsService {
 
   async createTransaction(input: string): Promise<Transaction> {
     return await this.repository.save(parse(input));
+  }
+
+  async createTransaction2(input: TransactionDto): Promise<Transaction> {
+    return await this.repository.save(input);
   }
 
   async getAllTransactions(): Promise<Transaction[]> {

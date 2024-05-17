@@ -4,9 +4,11 @@ import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CategoryDto,
   CreateTransactionRequestDto,
+  DateDto,
+  ListTransactionResponseDto,
   TransactionDto,
 } from './dtos';
-import { TransactionType } from './transaction.type';
+
 import { TransactionsService } from './transactions.service';
 
 @ApiTags('transactions')
@@ -44,7 +46,7 @@ export class TransactionsController {
     type: TransactionDto,
     isArray: true,
   })
-  async getAllTransactions(): Promise<TransactionType[]> {
+  async getAllTransactions(): Promise<ListTransactionResponseDto[]> {
     return await this.service.getAllTransactions();
   }
 
@@ -58,5 +60,15 @@ export class TransactionsController {
     return (await this.service.getSumByCategory()).map(
       (c) => new CategoryDto(c),
     );
+  }
+
+  @Get('by-date')
+  @ApiResponse({
+    status: 200,
+    type: DateDto,
+    isArray: true,
+  })
+  async getSymByDate() {
+    return (await this.service.getSumByDate()).map((d) => new DateDto(d));
   }
 }

@@ -8,6 +8,8 @@ import {
   ListTransactionResponseDto,
   TransactionDto,
 } from './dtos';
+import { TransactionType } from './transaction.type';
+import { TransactionsService } from './transactions.service';
 
 import { TransactionsService } from './transactions.service';
 
@@ -46,6 +48,7 @@ export class TransactionsController {
     type: TransactionDto,
     isArray: true,
   })
+
   async getAllTransactions(): Promise<ListTransactionResponseDto[]> {
     return await this.service.getAllTransactions();
   }

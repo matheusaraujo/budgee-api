@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
+  BalanceDto,
   CategoryDto,
   CreateTransactionRequestDto,
   DateDto,
@@ -56,7 +57,7 @@ export class TransactionsController {
     type: CategoryDto,
     isArray: true,
   })
-  async getSumByCategory() {
+  async getSumByCategory(): Promise<CategoryDto[]> {
     return (await this.service.getSumByCategory()).map(
       (c) => new CategoryDto(c),
     );
@@ -68,7 +69,16 @@ export class TransactionsController {
     type: DateDto,
     isArray: true,
   })
-  async getSymByDate() {
+  async getSymByDate(): Promise<DateDto[]> {
     return (await this.service.getSumByDate()).map((d) => new DateDto(d));
+  }
+
+  @Get('balance')
+  @ApiResponse({
+    status: 200,
+    type: BalanceDto,
+  })
+  async getBalance(): Promise<BalanceDto> {
+    return await this.service.getBalance();
   }
 }

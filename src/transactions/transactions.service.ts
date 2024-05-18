@@ -74,4 +74,11 @@ export class TransactionsService {
       .orderBy('transaction.date', 'ASC')
       .getRawMany();
   }
+
+  async getBalance() {
+    return await this.repository
+      .createQueryBuilder('transaction')
+      .select('SUM(transaction.amount)', 'balance')
+      .getRawOne();
+  }
 }

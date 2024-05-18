@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Transaction {
@@ -14,6 +14,6 @@ export class Transaction {
   @Column()
   date: Date;
 
-  @Column()
+  @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 }

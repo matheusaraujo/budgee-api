@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -78,7 +78,10 @@ export class TransactionsController {
     status: 200,
     type: BalanceDto,
   })
-  async getBalance(): Promise<BalanceDto> {
-    return await this.service.getBalance();
+  async getBalance(
+    @Query('year') year: string | undefined,
+    @Query('month') month: string | undefined,
+  ): Promise<BalanceDto> {
+    return await this.service.getBalance(year, month);
   }
 }

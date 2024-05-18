@@ -16,4 +16,7 @@ export class Transaction {
 
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
+
+  @Column()
+  type: string | undefined;
 }

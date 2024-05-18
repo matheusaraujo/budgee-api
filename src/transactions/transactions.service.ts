@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { parse } from './parse';
+import { adjustAmount, parse } from './parse';
 import { Transaction } from 'src/entities/transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ListTransactionResponseDto, TransactionDto } from './dtos';
+import { TransactionType } from './transaction.type';
 
 @Injectable()
 export class TransactionsService {
@@ -13,11 +14,15 @@ export class TransactionsService {
   ) {}
 
   async createTransaction(input: string): Promise<Transaction> {
-    return await this.repository.save(parse(input));
+    return await this._createTransaction(parse(input));
   }
 
   async createTransaction2(input: TransactionDto): Promise<Transaction> {
-    return await this.repository.save(input);
+    return await this._createTransaction(input);
+  }
+
+  async _createTransaction(transaction: TransactionType): Promise<Transaction> {
+    return await this.repository.save(adjustAmount(transaction));
   }
 
   async getAllTransactions(): Promise<ListTransactionResponseDto[]> {

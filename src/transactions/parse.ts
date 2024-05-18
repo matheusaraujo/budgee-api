@@ -11,6 +11,15 @@ export function parse(input: string): TransactionType {
   };
 }
 
+export function adjustAmount(transaction: TransactionType) {
+  const incomeCategories = ['R10', 'R20', 'R30'];
+  if (incomeCategories.includes(transaction.category)) return transaction;
+  return {
+    ...transaction,
+    amount: -transaction.amount,
+  };
+}
+
 function getCategory(words: string[]): string | undefined {
   const category = words.filter((w) => w.startsWith('#'));
   if (category?.length === 1) return category[0].substring(1);

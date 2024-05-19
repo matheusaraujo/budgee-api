@@ -3,4 +3,5 @@ export type TransactionType = {
   description: string | undefined;
   date: Date | undefined;
   amount: number | undefined;
+  type?: string | undefined;
 };

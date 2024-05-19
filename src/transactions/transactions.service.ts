@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { parse } from './parse';
-import { Transaction } from 'src/entities/transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Transaction } from 'src/entities/transaction.entity';
+import { Repository, ReturnDocument } from 'typeorm';
 import { ListTransactionResponseDto, TransactionDto } from './dtos';
+import { adjustAmount, getType, parse } from './parse';
+import { TransactionType } from './transaction.type';
 
 @Injectable()
 export class TransactionsService {
@@ -13,11 +14,17 @@ export class TransactionsService {
   ) {}
 
   async createTransaction(input: string): Promise<Transaction> {
-    return await this.repository.save(parse(input));
+    return await this._createTransaction(parse(input));
   }
 
   async createTransaction2(input: TransactionDto): Promise<Transaction> {
-    return await this.repository.save(input);
+    return await this._createTransaction(input);
+  }
+
+  async _createTransaction(transaction: TransactionType): Promise<Transaction> {
+    transaction.amount = adjustAmount(transaction);
+    transaction.type = getType(transaction);
+    return await this.repository.save(transaction);
   }
 
   async getAllTransactions(): Promise<ListTransactionResponseDto[]> {
@@ -68,5 +75,85 @@ export class TransactionsService {
       .groupBy('transaction.date')
       .orderBy('transaction.date', 'ASC')
       .getRawMany();
+  }
+
+  async getBalance(year: string | undefined, month: string | undefined) {
+    const { referenceDate } = this.getReferenceDates(year, month);
+
+    // TODO: remove positional arguments
+    const query = `
+      SELECT ? as referenceDate, SUM(t1.amount) AS balance
+      FROM transaction t1
+      WHERE t1.date <= ?
+    `;
+
+    return (
+      await this.repository.query(query, [referenceDate, referenceDate])
+    )[0];
+  }
+
+  async getDetailedBalance(year: string, month: string) {
+    const { referenceDate, initialReferenceDate } = this.getReferenceDates(
+      year,
+      month,
+    );
+
+    // TODO: remove positional arguments
+    const query = `
+    SELECT
+      ? as referenceDate,
+      ? as initialReferenceDate,
+      (SELECT IFNULL(SUM(t1.amount),0) FROM transaction t1 WHERE t1.date < ?) as previousBalance,
+      (SELECT IFNULL(SUM(t2.amount),0) FROM transaction t2 WHERE t2.date <= ?) as balance,
+      (SELECT IFNULL(SUM(t3.amount),0) FROM transaction t3 WHERE t3.date BETWEEN ? and ?) as balanceInPeriod,
+      (SELECT IFNULL(SUM(t4.amount),0) FROM transaction t4 WHERE t4.type = "income" and t4.date BETWEEN ? and ?) AS income,
+      (SELECT IFNULL(SUM(t5.amount),0) FROM transaction t5 WHERE t5.type = "expense" and t5.date BETWEEN ? and ?) AS expense,
+      (SELECT IFNULL(SUM(t6.amount),0) FROM transaction t6 WHERE t6.type = "savings" and t6.date BETWEEN ? and ?) AS savings
+    `;
+
+    return (
+      await this.repository.query(query, [
+        referenceDate,
+        initialReferenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+      ])
+    )[0];
+  }
+
+  getReferenceDates(
+    year?: string,
+    month?: string,
+  ): { referenceDate: Date; initialReferenceDate?: Date } {
+    let referenceDate: Date;
+    let initialReferenceDate: Date = undefined;
+
+    if (year === undefined && month === undefined) {
+      referenceDate = new Date();
+    } else if (month === undefined) {
+      initialReferenceDate = new Date(parseInt(year || '0', 10), 0, 1);
+      referenceDate = new Date(parseInt(year || '0', 10), 11, 31);
+    } else {
+      initialReferenceDate = new Date(
+        parseInt(year || '0', 10),
+        parseInt(month || '0', 10) - 1,
+        1,
+      );
+      referenceDate = new Date(
+        parseInt(year || '0', 10),
+        parseInt(month || '0', 10),
+        0,
+      );
+    }
+
+    return { referenceDate, initialReferenceDate };
   }
 }

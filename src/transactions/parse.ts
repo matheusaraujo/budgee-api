@@ -11,6 +11,27 @@ export function parse(input: string): TransactionType {
   };
 }
 
+export function adjustAmount(transaction: TransactionType): number {
+  const incomeCategories = ['R10', 'R20', 'R30'];
+  if (incomeCategories.includes(transaction.category))
+    return Math.abs(transaction.amount);
+  return -Math.abs(transaction.amount);
+}
+
+export function getType(transaction: TransactionType) {
+  const mapping = {
+    R10: 'income',
+    R20: 'income',
+    R30: 'income',
+    D01: 'savings',
+  };
+
+  if (mapping[transaction.category]) {
+    return mapping[transaction.category];
+  }
+  return 'expense';
+}
+
 function getCategory(words: string[]): string | undefined {
   const category = words.filter((w) => w.startsWith('#'));
   if (category?.length === 1) return category[0].substring(1);

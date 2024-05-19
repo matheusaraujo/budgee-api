@@ -78,48 +78,69 @@ export class TransactionsService {
   }
 
   async getBalance(year: string | undefined, month: string | undefined) {
-    // if (year === undefined && month === undefined) {
-    //   return await this.repository
-    //     .createQueryBuilder('transaction')
-    //     .select('SUM(transaction.amount)', 'balance')
-    //     .addSelect(':referenceDate', 'referenceDate')
-    //     .where('transaction.date < :referenceDate', {
-    //       referenceDate: new Date(),
-    //     })
-    //     .getRawOne();
-    // } else if (month === undefined) {
-    //   return await this.repository
-    //     .createQueryBuilder('transaction')
-    //     .select('SUM(transaction.amount)', 'balance')
-    //     .addSelect(':referenceDate', 'referenceDate')
-    //     .where('transaction.date < :referenceDate', {
-    //       referenceDate: new Date(parseInt(year || '0', 10), 11, 31),
-    //     })
-    //     .getRawOne();
-    // } else {
-    //   return await this.repository
-    //     .createQueryBuilder('transaction')
-    //     .select('SUM(transaction.amount)', 'balance')
-    //     .addSelect(':referenceDate', 'referenceDate')
-    //     .where('transaction.date < :referenceDate', {
-    //       referenceDate: new Date(
-    //         parseInt(year || '0', 10),
-    //         parseInt(month || '0', 10),
-    //         0,
-    //       ),
-    //     })
-    //     .getRawOne();
-    // }
+    const { referenceDate } = this.getReferenceDates(year, month);
 
+    // TODO: remove positional arguments
+    const query = `
+      SELECT ? as referenceDate, SUM(t1.amount) AS balance
+      FROM transaction t1
+      WHERE t1.date <= ?
+    `;
+
+    return (
+      await this.repository.query(query, [referenceDate, referenceDate])
+    )[0];
+  }
+
+  async getDetailedBalance(year: string, month: string) {
+    const { referenceDate, initialReferenceDate } = this.getReferenceDates(
+      year,
+      month,
+    );
+
+    // TODO: remove positional arguments
+    const query = `
+    SELECT
+      ? as referenceDate,
+      ? as initialReferenceDate,
+      (SELECT IFNULL(SUM(t1.amount),0) FROM transaction t1 WHERE t1.date < ?) as previousBalance,
+      (SELECT IFNULL(SUM(t2.amount),0) FROM transaction t2 WHERE t2.date <= ?) as balance,
+      (SELECT IFNULL(SUM(t3.amount),0) FROM transaction t3 WHERE t3.date BETWEEN ? and ?) as balanceInPeriod,
+      (SELECT IFNULL(SUM(t4.amount),0) FROM transaction t4 WHERE t4.type = "income" and t4.date BETWEEN ? and ?) AS income,
+      (SELECT IFNULL(SUM(t5.amount),0) FROM transaction t5 WHERE t5.type = "expense" and t5.date BETWEEN ? and ?) AS expense,
+      (SELECT IFNULL(SUM(t6.amount),0) FROM transaction t6 WHERE t6.type = "savings" and t6.date BETWEEN ? and ?) AS savings
+    `;
+
+    return (
+      await this.repository.query(query, [
+        referenceDate,
+        initialReferenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+        initialReferenceDate,
+        referenceDate,
+      ])
+    )[0];
+  }
+
+  getReferenceDates(
+    year?: string,
+    month?: string,
+  ): { referenceDate: Date; initialReferenceDate?: Date } {
     let referenceDate: Date;
-    let initialReferenceDate: Date;
-    let includeDetails = false;
+    let initialReferenceDate: Date = undefined;
+
     if (year === undefined && month === undefined) {
       referenceDate = new Date();
     } else if (month === undefined) {
       initialReferenceDate = new Date(parseInt(year || '0', 10), 0, 1);
       referenceDate = new Date(parseInt(year || '0', 10), 11, 31);
-      includeDetails = true;
     } else {
       initialReferenceDate = new Date(
         parseInt(year || '0', 10),
@@ -131,49 +152,8 @@ export class TransactionsService {
         parseInt(month || '0', 10),
         0,
       );
-      includeDetails = true;
     }
 
-    if (!includeDetails) {
-      const query = `
-        SELECT ? as referenceDate, SUM(t1.amount) AS balance
-        FROM transaction t1
-        WHERE t1.date <= ?
-      `;
-
-      return (
-        await this.repository.query(query, [referenceDate, referenceDate])
-      )[0];
-    } else {
-      const query = `
-        SELECT
-          ? as referenceDate,
-          ? as initialReferenceDate,
-          (SELECT IFNULL(SUM(t1.amount),0) FROM transaction t1 WHERE t1.date < ?) as previousBalance,
-          (SELECT IFNULL(SUM(t2.amount),0) FROM transaction t2 WHERE t2.date <= ?) as balance,
-          (SELECT IFNULL(SUM(t3.amount),0) FROM transaction t3 WHERE t3.date BETWEEN ? and ?) as balanceInPeriod,
-          (SELECT IFNULL(SUM(t4.amount),0) FROM transaction t4 WHERE t4.type = "income" and t4.date BETWEEN ? and ?) AS income,
-          (SELECT IFNULL(SUM(t5.amount),0) FROM transaction t5 WHERE t5.type = "expense" and t5.date BETWEEN ? and ?) AS expense,
-          (SELECT IFNULL(SUM(t6.amount),0) FROM transaction t6 WHERE t6.type = "savings" and t6.date BETWEEN ? and ?) AS savings
-      `;
-
-      // TODO: try to not use positional args
-      return (
-        await this.repository.query(query, [
-          referenceDate,
-          initialReferenceDate,
-          initialReferenceDate,
-          referenceDate,
-          initialReferenceDate,
-          referenceDate,
-          initialReferenceDate,
-          referenceDate,
-          initialReferenceDate,
-          referenceDate,
-          initialReferenceDate,
-          referenceDate,
-        ])
-      )[0];
-    }
+    return { referenceDate, initialReferenceDate };
   }
 }

@@ -84,4 +84,13 @@ export class TransactionsController {
   ): Promise<BalanceDto> {
     return await this.service.getBalance(year, month);
   }
+
+  @Get('detailed-balance')
+  @ApiResponse({ status: 200, type: BalanceDto })
+  async getDetailedBalance(
+    @Query('year') year: string,
+    @Query('month') month: string,
+  ) {
+    return await this.service.getDetailedBalance(year, month);
+  }
 }
